@@ -24,3 +24,11 @@ target
 # Added by cargo
 
 /target
+
+*.py
+docker-compose.yml
+.env
+
+
+
+
