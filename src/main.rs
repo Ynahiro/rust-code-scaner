@@ -1,8 +1,23 @@
-mod indexer;
-use indexer::code_parser::*;
+use rust_code_scaner::{database, indexer::code_parser::*};
+use tokio;
 
-fn main() {
-    let mut pyt = PythonParser::new();
+#[tokio::main]
+async fn main() {
+    let pool = database::create_pool().await.unwrap();
+    let client = pool.get().await.unwrap();
+    let rows = client.query("select * from users", &[]).await.unwrap();
+    for row in rows {
+        let id: i64 = row.get(0);
+        let username: String = row.get(1);
+        let role: String = row.get(2);
+
+        println!("ID: {}, username: {}, role: {}", id, username, role);
+    }
+}
+
+/*
+*
+*    let mut pyt = PythonParser::new();
     let res = match pyt.extract_snippets("main.py") {
         Ok(v) => v,
         Err(e) => {
@@ -39,4 +54,5 @@ fn main() {
     }
 
     /* res.iter().for_each(|n| println!("{:#?}", n)); */
-}
+
+* */
