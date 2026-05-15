@@ -14,7 +14,6 @@ async fn main() {
         println!("ID: {}, username: {}, role: {}", id, username, role);
     }
 }
-
 /*
 *
 *    let mut pyt = PythonParser::new();
