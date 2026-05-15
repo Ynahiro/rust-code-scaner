@@ -7,16 +7,20 @@ use clap::{Parser, Subcommand, ValueEnum};
 #[command(about = "Приложение для сканнирования и анализа кода", long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     Dashboard(DashboardArgs),
     Scan(ScanArgs),
+    #[command(subcommand)]
     Report(ReportArgs),
+    #[command(subcommand)]
     Source(SourceArgs),
+    #[command(subcommand)]
     User(UserArgs),
+    #[command(subcommand)]
     Config(ConfigArgs),
 }
 
@@ -72,14 +76,10 @@ pub enum ReportArgs {
         id: i64,
 
         #[arg(long, value_enum)]
-        format: ExpotFormat,
+        format: ExportFormat,
 
         #[arg(long)]
         output: PathBuf,
-    },
-    Diff {
-        id1: i64,
-        id2: i64,
     },
 }
 
@@ -90,3 +90,54 @@ pub enum ExportFormat {
     Json,
 }
 
+#[derive(Subcommand)]
+pub enum SourceArgs {
+    List,
+    Add {
+        #[arg(long)]
+        name: String,
+        url_or_path: String,
+    },
+    Update {
+        id: i64,
+    },
+    Remove {
+        id: i64,
+    },
+    Status,
+}
+
+#[derive(Subcommand)]
+pub enum UserArgs {
+    List,
+    Create {
+        name: String,
+        #[arg(long, value_enum)]
+        role: UserRole,
+    },
+    Delete {
+        name: String,
+    },
+    SetRole {
+        name: String,
+        #[arg(long, value_enum)]
+        role: UserRole,
+    },
+    ResetPassword {
+        name: String,
+    },
+}
+
+#[derive(ValueEnum, Clone)]
+pub enum UserRole {
+    Admin,
+    Analyst,
+    Operator,
+}
+
+#[derive(Subcommand)]
+pub enum ConfigArgs {
+    Show,
+    Set { key: String, value: String },
+    Reset,
+}
