@@ -16,3 +16,5 @@ thiserror = "2.0.18"
 dotenv = "0.15.0"
 config = "0.15.22"
 serde = { version = "1.0.228", features = ["derive"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }

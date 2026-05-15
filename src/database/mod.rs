@@ -18,7 +18,6 @@ impl DatabaseConfig {
 }
 
 pub async fn create_pool() -> Result<Pool, Box<dyn std::error::Error>> {
-    dotenv::dotenv().ok();
     let cfg = DatabaseConfig::from_env().expect("Ошибка в создании конфигурации БД");
     Ok(cfg
         .pg

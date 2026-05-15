@@ -4,13 +4,17 @@ use rust_code_scaner::{
     database,
 };
 use tokio;
+use tracing::{error, info};
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
+    tracing_subscriber::fmt::init();
+    let pool = database::create_pool().await.unwrap();
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Dashboard(args) => println!("Команда DASHBOARD"),
+        Commands::Dashboard(args) => info!("Команда DASHBOARD"),
         Commands::Scan(args) => println!("Команда SCAN"),
         Commands::Report(subcmd) => match subcmd {
             ReportArgs::List => print!("Список отчетов"),
@@ -38,7 +42,6 @@ async fn main() {
         },
     }
 
-    let pool = database::create_pool().await.unwrap();
     let client = pool.get().await.unwrap();
     let rows = client.query("select * from users", &[]).await.unwrap();
     for row in rows {
