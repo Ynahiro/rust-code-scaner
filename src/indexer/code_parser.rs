@@ -3,9 +3,9 @@
 // На выходе временный файл с нормализированным кодом
 
 // TODO
-// [ ] Сделать функцию для разделения на токены
+// [x] Сделать функцию для разделения на токены
+// [ ] Доделать get_ast_hash (нужно ли заново парсить, если у меня уже есть все токены)
 // [ ] Сделать представление в виде строки
-// [ ] Попробовать сделать поддержку другого языка (хотя бы просто создание сниппетов, чтобы проетстить)
 
 use std::{
     collections::HashMap,
@@ -14,6 +14,7 @@ use std::{
     path::Path,
 };
 
+use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use tree_sitter::{Language, Node, Parser, Query, QueryCursor, StreamingIterator};
@@ -130,7 +131,7 @@ pub trait CodeParser: Send + Sync {
     fn normalize_snippet(&mut self, snippet: &RawSnippet) -> Result<NormalizeSnippet, ParserError>;
 
     // Преобразование дерева в строку для хеширования
-    fn get_ast_representation(&self, content: &str) -> Result<String, ParserError>;
+    fn get_ast_hash(&mut self, content: &str) -> Result<String, ParserError>;
 
     fn collect_declarations(
         &self,
@@ -140,17 +141,17 @@ pub trait CodeParser: Send + Sync {
     ) {
         let node_type = node.kind();
 
-        let is_declaration = match node_type {
+        let is_declaration = matches!(
+            node_type,
             "function_definition"
-            | "lambda"
-            | "async_function_def"
-            | "if_statement"
-            | "for_statement"
-            | "while_statement"
-            | "try_statement"
-            | "with_statement" => true,
-            _ => false,
-        };
+                | "lambda"
+                | "async_function_def"
+                | "if_statement"
+                | "for_statement"
+                | "while_statement"
+                | "try_statement"
+                | "with_statement"
+        );
 
         if is_declaration {
             let original_code = source[node.start_byte()..node.end_byte()].to_string();
@@ -230,6 +231,8 @@ impl CodeParser for PythonParser {
         let (normalize_code, tokens) = tokenize_code(&mut self.parser, &self.language, no_com_code)
             .map_err(|e| ParserError::TokenizeCodeError(Box::new(e)))?;
 
+        let _ = self.get_ast_hash(&normalize_code);
+
         Ok(NormalizeSnippet {
             tokens,
             normalize_code,
@@ -237,8 +240,27 @@ impl CodeParser for PythonParser {
         })
     }
 
-    fn get_ast_representation(&self, content: &str) -> Result<String, ParserError> {
-        todo!()
+    fn get_ast_hash(&mut self, content: &str) -> Result<String, ParserError> {
+        let tree = self
+            .parser
+            .parse(content, None)
+            .ok_or_else(|| ParserError::ParseError("Failed to parse".to_string()))?;
+        let root = tree.root_node();
+        let mut serialized_code = String::new();
+        let structure = self.serialize_code(root, &mut serialized_code);
+
+        Ok("f1".to_string())
+    }
+}
+
+impl PythonParser {
+    fn serialize_code(&self, node: Node, serialized_code: &mut String) {
+        let kind = node.kind();
+        println!("{}", kind);
+
+        serialized_code.push_str(kind);
+
+        if node.child_count() > 0 {}
     }
 }
 
@@ -448,4 +470,11 @@ fn replace_token(mut code: String, mut tokens: Vec<Node<'_>>, token_type: &str) 
     }
 
     code
+}
+
+fn sha256_hash(data: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(data.as_bytes());
+    let result = hasher.finalize();
+    hex::encode(result)
 }

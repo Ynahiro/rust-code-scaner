@@ -2,9 +2,48 @@ use clap::{self, Parser};
 use rust_code_scaner::{
     cli::{Cli, Commands, ConfigArgs, ReportArgs, SourceArgs, UserArgs},
     database,
+    indexer::code_parser::*,
 };
 use tokio;
 use tracing::{error, info};
+
+fn scan() {
+    let mut pyt = PythonParser::new();
+    let res = match pyt.extract_snippets("main.py") {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Ошибка создания снипетов {:?}", e);
+            Vec::new()
+        }
+    };
+
+    /* let norm = match pyt.normalize_snippet(&res[4]) {
+        Ok(n) => n,
+        Err(e) => {
+            eprintln!("Ошибка нормализации {:?}", e);
+            NormalizeSnippet {
+                tokens: Vec::new(),
+                normalize_code: "".to_string(),
+                ast_simplified: "".to_string(),
+            }
+        }
+    }; */
+
+    for snip in res {
+        match pyt.normalize_snippet(&snip) {
+            Ok(norm) => println!("\n\n Нормализованный снипет: {:#?}", norm.normalize_code),
+            Err(e) => {
+                eprintln!("Ошибка нормалищации {:?}", e);
+                NormalizeSnippet {
+                    tokens: Vec::new(),
+                    normalize_code: "".to_string(),
+                    ast_simplified: "".to_string(),
+                };
+                continue;
+            }
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -15,7 +54,7 @@ async fn main() {
 
     match cli.command {
         Commands::Dashboard(args) => info!("Команда DASHBOARD"),
-        Commands::Scan(args) => println!("Команда SCAN"),
+        Commands::Scan(args) => scan(),
         Commands::Report(subcmd) => match subcmd {
             ReportArgs::List => print!("Список отчетов"),
             ReportArgs::Show { id } => print!("Отчет под id"),
